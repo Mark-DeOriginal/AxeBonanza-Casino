@@ -18,11 +18,10 @@ function useUI() {
 
 export function ActionButton({ action, category, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { action: Panel | 'menu'; category?: string }) {
   const ui = useUI();
+  if (action === 'login' || action === 'signup') {
+    return <a href={accountUrl} rel="noreferrer" className={props.className} aria-label={props['aria-label']} tabIndex={props.tabIndex} title={props.title}>{children}</a>;
+  }
   return <button {...props} type="button" onClick={() => {
-    if (action === 'login' || action === 'signup') {
-      window.location.assign(accountUrl);
-      return;
-    }
     if (action === 'menu') ui.toggleMenu();
     else ui.open(action, category);
   }}>{children}</button>;
