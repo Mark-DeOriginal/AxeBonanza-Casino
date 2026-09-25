@@ -4,9 +4,9 @@ import { createContext, useContext, useEffect, useRef, useState, type ButtonHTML
 import Image from 'next/image';
 import { allGames, categories, filters, gameImage, promotions, siteAsset } from '@/data/casino';
 import { ColorIcon, Icon } from './icon';
-import { BrandMark } from './brand';
 
-type Panel = 'login' | 'signup' | 'search' | 'providers' | 'languages' | 'notifications' | 'support' | 'forgot' | null;
+type Panel = 'search' | 'providers' | 'languages' | 'notifications' | 'support' | null;
+type Action = Panel | 'login' | 'signup' | 'menu';
 type UIState = { open: (panel: Panel, category?: string) => void; toggleMenu: () => void };
 const UI = createContext<UIState | null>(null);
 const accountUrl = 'https://axecasmedia.com/a3zplx4yn';
@@ -16,7 +16,7 @@ function useUI() {
   return value;
 }
 
-export function ActionButton({ action, category, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { action: Panel | 'menu'; category?: string }) {
+export function ActionButton({ action, category, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { action: Action; category?: string }) {
   const ui = useUI();
   if (action === 'login' || action === 'signup') {
     return <a href={accountUrl} rel="noreferrer" className={props.className} aria-label={props['aria-label']} tabIndex={props.tabIndex} title={props.title}>{children}</a>;
@@ -76,24 +76,21 @@ export function CasinoUI({ children }: { children: ReactNode }) {
     if (window.matchMedia('(min-width: 834px)').matches) setCollapsed(value => !value);
     else setMenu(value => !value);
   };
-  const titles: Record<NonNullable<Panel>, string> = { login: 'Login', signup: 'Register', search: 'Search', providers: 'Search', languages: 'Languages', notifications: 'Notifications', support: 'Live Support', forgot: 'Forgot password?' };
+  const titles: Record<NonNullable<Panel>, string> = { search: 'Search', providers: 'Search', languages: 'Languages', notifications: 'Notifications', support: 'Live Support' };
   return <UI.Provider value={{ open, toggleMenu }}>
     <div className={`casino-app${menu ? ' menu-open' : ''}${collapsed ? ' sidebar-collapsed' : ''}`}>
       {menu && <button className="menu-scrim" aria-label="Close menu" onClick={() => setMenu(false)} />}
       {children}
       <CookieNotice />
       <button className="support-launcher" aria-label="Open messaging window" onClick={() => open('support')}><Image src="/reference/chat.svg" alt="" width={24} height={24} /></button>
-      <dialog ref={dialog} className={`site-dialog ${panel === 'login' || panel === 'signup' ? 'auth-dialog' : ''} ${panel === 'support' ? 'support-dialog' : ''} ${panel === 'notifications' ? 'notification-dialog' : ''}`} aria-label={panel ? titles[panel] : 'Dialog'} onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }}>
+      <dialog ref={dialog} className={`site-dialog ${panel === 'support' ? 'support-dialog' : ''} ${panel === 'notifications' ? 'notification-dialog' : ''}`} aria-label={panel ? titles[panel] : 'Dialog'} onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }}>
         {panel && <div className="dialog-surface">
           <button className="dialog-close" aria-label="Close dialog" onClick={close}><Icon name="close" /></button>
-          {(panel === 'login' || panel === 'signup') ? <AuthForm mode={panel} onMode={setPanel} /> : <>
-            <h2>{titles[panel]}</h2>
-            {(panel === 'search' || panel === 'providers') && <Search initialTab={panel === 'providers' ? 'providers' : 'games'} category={selectedCategory} onPlay={() => setPanel('login')} />}
-            {panel === 'languages' && <Languages />}
-            {panel === 'notifications' && <a className="notification-card" href="https://www.axecasino.com/promotions" target="_blank" rel="noreferrer"><Image src={siteAsset('cms/promotion-cms/welcome_first_notification.webp')} alt="First Deposit bonus" width={608} height={180} unoptimized /><span><small>FIRST DEPOSIT BONUS</small><strong>100% UP TO 1000 EUR<br />+ 50 FS</strong></span></a>}
-            {panel === 'forgot' && <DemoForm label="Email" button="Reset password" />}
-            {panel === 'support' && <div className="support-body"><small>Support Team</small><p className="support-message">Hi there! Let us know how we can assist you today ✨</p><DemoForm label="How may we assist?" button="Send" /></div>}
-          </>}
+          <h2>{titles[panel]}</h2>
+          {(panel === 'search' || panel === 'providers') && <Search initialTab={panel === 'providers' ? 'providers' : 'games'} category={selectedCategory} />}
+          {panel === 'languages' && <Languages />}
+          {panel === 'notifications' && <a className="notification-card" href="https://www.axecasino.com/promotions" target="_blank" rel="noreferrer"><Image src={siteAsset('cms/promotion-cms/welcome_first_notification.webp')} alt="First Deposit bonus" width={608} height={180} unoptimized /><span><small>FIRST DEPOSIT BONUS</small><strong>100% UP TO 1000 EUR<br />+ 50 FS</strong></span></a>}
+          {panel === 'support' && <div className="support-body"><small>Support Team</small><p className="support-message">Hi there! Let us know how we can assist you today ✨</p><DemoForm label="How may we assist?" button="Send" /></div>}
         </div>}
       </dialog>
     </div>
@@ -171,7 +168,7 @@ export function WinnerList() {
   return <aside className="winners"><h2><Icon name="trophy" className="green-icon" />Latest Winners</h2><div className="winner-list">{winners.map(winner => <ActionButton className="winner-card" action="login" key={winner.image}><Image src={`/reference/cdn/axecasino/i/s3/${winner.image}.webp`} alt="" width={72} height={72} unoptimized /><span><span className="winner-name">{winner.name}</span><strong>{winner.amount}</strong><span className="winner-game">in <b>{winner.game}</b></span></span></ActionButton>)}</div><div className="rail-progress"><span /></div></aside>;
 }
 
-function Search({ initialTab, category, onPlay }: { initialTab: string; category: string; onPlay: () => void }) {
+function Search({ initialTab, category }: { initialTab: string; category: string }) {
   const [tab, setTab] = useState(initialTab);
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(category);
@@ -183,31 +180,9 @@ function Search({ initialTab, category, onPlay }: { initialTab: string; category
     <label className="search-input"><Icon name="search" /><input type="search" aria-label="Find your game" placeholder="Find your game" value={query} onChange={event => setQuery(event.target.value)} /></label>
     <div className="search-tabs" role="tablist" aria-label="Search types">{[['games', 'Games', query ? games.length : 16429], ['categories', 'Categories', query ? matchingCategories.length : 22], ['providers', 'Providers', query ? providers.length : 123]].map(([id, name, count]) => <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(String(id))}>{name}<span>{count}</span></button>)}</div>
     <div className="search-results" role="tabpanel" aria-label={tab}>
-      {tab === 'games' && <><h3>{query ? 'Results' : category === 'all' ? 'Trending' : categories.find(item => item.id === category)?.title ?? 'Games'}</h3>{games.length ? games.map(game => <button className="search-game" key={game.id} onClick={onPlay}><Image src={gameImage(game)} alt="" width={60} height={60} unoptimized /><span><strong>{game.name}</strong><small>{game.provider}</small></span></button>) : <p className="empty-results">No games found. Try another search.</p>}</>}
+      {tab === 'games' && <><h3>{query ? 'Results' : category === 'all' ? 'Trending' : categories.find(item => item.id === category)?.title ?? 'Games'}</h3>{games.length ? games.map(game => <a className="search-game" href={accountUrl} rel="noreferrer" key={game.id}><Image src={gameImage(game)} alt="" width={60} height={60} unoptimized /><span><strong>{game.name}</strong><small>{game.provider}</small></span></a>) : <p className="empty-results">No games found. Try another search.</p>}</>}
       {tab === 'categories' && <div className="result-grid">{matchingCategories.map(([id, name, icon]) => <button key={id} onClick={() => { setActiveCategory(id); setQuery(''); setTab('games'); }}><ColorIcon name={icon} />{name}</button>)}</div>}
       {tab === 'providers' && <div className="result-grid">{providers.map(name => <button key={name} onClick={() => { setActiveCategory('all'); setQuery(name); setTab('games'); }}>{name}<small>{allGames.filter(game => game.provider === name).length}</small></button>)}</div>}
-    </div>
-  </div>;
-}
-
-function AuthForm({ mode, onMode }: { mode: 'login' | 'signup'; onMode: (panel: Panel) => void }) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState('');
-  const signup = mode === 'signup';
-  return <div className="auth-layout">
-    <div className="auth-art"><BrandMark /><span className="eyebrow">Welcome package</span><strong>3,750 EUR<span>+ 200 FS</span></strong></div>
-    <div className="auth-body"><div className="auth-mobile-logo"><BrandMark /></div>{signup && <div className="auth-mobile-offer"><span className="eyebrow">Welcome package</span><strong>3,750 EUR + 200 FS</strong></div>}
-      <h2>{signup ? 'Register' : 'Login'}</h2><p className="auth-intro">{signup ? 'Create an AxeBonanza Casino account to enjoy all that we offer' : 'Log in to your AxeBonanza Casino account to continue playing'}</p>
-      <div className="auth-tabs" role="tablist" aria-label="Account forms"><button role="tab" aria-selected={!signup} onClick={() => { setMessage(''); onMode('login'); }}>Login</button><button role="tab" aria-selected={signup} onClick={() => { setMessage(''); onMode('signup'); }}>Sign Up</button></div>
-      <form onSubmit={event => { event.preventDefault(); event.currentTarget.reset(); setMessage('Educational demo — no account was created and no information was sent.'); }}>
-        <label className="field">Email<input type="email" autoComplete="off" required /></label>
-        <label className="field">Password<span className="password-field"><input type={showPassword ? 'text' : 'password'} autoComplete="off" minLength={8} required /><button type="button" className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
-        {signup && <><div className="country-fields"><label className="field">Country<select required defaultValue=""><option value="" disabled>Country</option>{['Australia', 'Canada', 'New Zealand', 'Germany', 'Norway', 'Switzerland'].map(country => <option key={country}>{country}</option>)}</select></label><label className="field">Currency<select defaultValue="EUR">{['EUR', 'CAD', 'AUD', 'NZD', 'USD'].map(currency => <option key={currency}>{currency}</option>)}</select></label></div><label className="terms-check"><input type="checkbox" required /><span>I am 18 years old and I accept the terms and conditions<br /><a href="https://www.axecasino.com/terms-and-conditions" target="_blank" rel="noreferrer">Terms And Conditions</a> and <a href="https://www.axecasino.com/privacy-policy" target="_blank" rel="noreferrer">Privacy Policy</a></span></label></>}
-        <button className="button green full" type="submit">{signup ? 'Sign Up' : 'Login'}</button>
-        <button className="button secondary full google-button" type="button" onClick={() => setMessage('Google sign-in is not connected in this educational demo.')}><span className="google-letter">G</span>{signup ? 'Sign up with Google' : 'Login with Google'}</button>
-        {!signup && <button className="forgot-link" type="button" onClick={() => onMode('forgot')}>Forgot password?</button>}
-        {message && <p className="form-message" role="status">{message}</p>}
-      </form>
     </div>
   </div>;
 }

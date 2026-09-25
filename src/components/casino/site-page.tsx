@@ -62,7 +62,7 @@ function GameDetail({ parts }: { parts: string[] }) {
   const id=parts.slice(1).join('/');
   const game=allGames.find(item=>item.id.toLowerCase()===id.toLowerCase())??allGames[0];
   const requested=pretty(parts.at(-1)??game.name);
-  return <div className="game-detail"><div className="game-preview"><Image src={gameImage(game)} alt="" fill priority unoptimized sizes="420px"/><div><span className="eyebrow">{game.provider}</span><h1>{requested}</h1><p>Open the local login demo to continue. Real-money gameplay is not connected.</p><ActionButton action="login" className="button green">Play Now</ActionButton><ActionButton action="login" className="button secondary">Demo</ActionButton></div></div><section className="inner-content"><div className="library-heading"><h2>You may also like</h2></div><div className="game-library compact-library">{allGames.slice(0,6).map(item=><GridCard key={item.id} game={item}/>)}</div></section></div>;
+  return <div className="game-detail"><div className="game-preview"><Image src={gameImage(game)} alt="" fill priority unoptimized sizes="420px"/><div><span className="eyebrow">{game.provider}</span><h1>{requested}</h1><p>Continue to the account page to play this game.</p><ActionButton action="login" className="button green">Play Now</ActionButton><ActionButton action="login" className="button secondary">Demo</ActionButton></div></div><section className="inner-content"><div className="library-heading"><h2>You may also like</h2></div><div className="game-library compact-library">{allGames.slice(0,6).map(item=><GridCard key={item.id} game={item}/>)}</div></section></div>;
 }
 
 export function SitePage({ parts }: { parts: string[] }) {
